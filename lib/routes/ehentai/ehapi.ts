@@ -95,7 +95,12 @@ async function parsePage(cache, data, get_bittorrent = false, embed_thumb = fals
         let thumbnail = el_img.data('src') ?? el_img.attr('src');
         if (config.ehentai.img_proxy && thumbnail) {
             const url = new URL(thumbnail);
-            thumbnail = config.ehentai.img_proxy + url.pathname + url.search;
+            // thumbnail = config.ehentai.img_proxy + url.pathname + url.search;
+            if (from_ex) {
+                thumbnail = config.ehentai.img_proxy + url.pathname.slice(2) + url.search;
+            } else {
+                thumbnail = config.ehentai.img_proxy + url.pathname + url.search;
+            }
         }
         if (embed_thumb && thumbnail) {
             thumbnail = await ehgot_thumb(cache, thumbnail);
