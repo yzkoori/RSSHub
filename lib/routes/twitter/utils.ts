@@ -184,7 +184,7 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
                             style += `height: ${heightOfPics}px;`;
                         }
                         if (widthOfPics <= 0 && heightOfPics <= 0) {
-                            content += `width="${media.sizes.large.w}" height="${media.sizes.large.h}" `;
+                            content += `width="${media.sizes.medium.w}" height="${media.sizes.medium.h}" `;
                         }
                         // content += ` style="${style}" ` + `${readable ? 'hspace="4" vspace="8"' : ''} src="${originalImg}">`;
                         content += ` style="${style}" ` + `${readable ? 'hspace="4" vspace="8"' : ''} src="${smallImg}">`;
