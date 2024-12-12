@@ -69,7 +69,7 @@ async function handler(ctx) {
             author: post.author,
             pubDate: new Date(post.created_at * 1e3).toUTCString(),
             description: (() => {
-                const result = [`<img src="${post.sample_url}" />`];
+                const result = [`<img src="${post.preview_url}" />`];
                 result.push(`<p>Rating:${post.rating}</p> <p>Score:${post.score}</p>`);
                 if (post.source) {
                     result.push(`<a href="${post.source}">Source</a>`);

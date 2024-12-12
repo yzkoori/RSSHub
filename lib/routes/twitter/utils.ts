@@ -27,6 +27,29 @@ const getOriginalImg = (url) => {
         return url;
     }
 };
+// +++
+const getSmallImg = (url) => {
+    let m = null;
+    if ((m = url.match(/^(https?:\/\/\w+\.twimg\.com\/media\/[^/:]+)\.(jpg|jpeg|gif|png|bmp|webp)(:\w+)?$/i))) {
+        let format = m[2];
+        if (m[2] === 'jpeg') {
+            format = 'jpg';
+        }
+        return `${m[1]}?format=${format}&name=900x900`;
+    } else if ((m = url.match(/^(https?:\/\/\w+\.twimg\.com\/.+)(\?.+)$/i))) {
+        const pars = getQueryParams(url);
+        if (!pars.format || !pars.name) {
+            return url;
+        }
+        if (pars.name === '900x900') {
+            return url;
+        }
+        return m[1] + '?format=' + pars.format + '&name=900x900';
+    } else {
+        return url;
+    }
+};
+// +++
 const replaceBreak = (text) => text.replaceAll(/<br><br>|<br>/g, ' ');
 
 const formatText = (item) => {
@@ -49,23 +72,39 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
     const routeParams = new URLSearchParams(ctx.req.param('routeParams'));
 
     const mergedParams = {
-        readable: fallback(params.readable, queryToBoolean(routeParams.get('readable')), false),
-        authorNameBold: fallback(params.authorNameBold, queryToBoolean(routeParams.get('authorNameBold')), false),
+        // 是否开启细节排版可读性优化
+        readable: fallback(params.readable, queryToBoolean(routeParams.get('readable')), true),
+        // 是否加粗作者名字
+        authorNameBold: fallback(params.authorNameBold, queryToBoolean(routeParams.get('authorNameBold')), true),
+        // 是否在标题处显示作者
         showAuthorInTitle: fallback(params.showAuthorInTitle, queryToBoolean(routeParams.get('showAuthorInTitle')), false),
+        // 
         showAuthorAsTitleOnly: fallback(params.showAuthorAsTitleOnly, queryToBoolean(routeParams.get('showAuthorAsTitleOnly')), false),
-        showAuthorInDesc: fallback(params.showAuthorInDesc, queryToBoolean(routeParams.get('showAuthorInDesc')), false),
+        // 是否在正文处显示作者
+        showAuthorInDesc: fallback(params.showAuthorInDesc, queryToBoolean(routeParams.get('showAuthorInDesc')), true),
+        // 是否在正文处显示被转推的推文的作者头像（若阅读器会提取正文图片，不建议开启）
         showQuotedAuthorAvatarInDesc: fallback(params.showQuotedAuthorAvatarInDesc, queryToBoolean(routeParams.get('showQuotedAuthorAvatarInDesc')), false),
+        // 是否在正文处显示作者头像（若阅读器会提取正文图片，不建议开启）
         showAuthorAvatarInDesc: fallback(params.showAuthorAvatarInDesc, queryToBoolean(routeParams.get('showAuthorAvatarInDesc')), false),
+        // 显示 “🔁” 取代 “Rt”、“↩️” 取代 “Re”
         showEmojiForRetweetAndReply: fallback(params.showEmojiForRetweetAndReply, queryToBoolean(routeParams.get('showEmojiForRetweetAndReply')), false),
+        // 显示RT和RE字符
         showSymbolForRetweetAndReply: fallback(params.showSymbolForRetweetAndReply, queryToBoolean(routeParams.get('showSymbolForRetweetAndReply')), true),
+        // 在标题处显示转推评论（置为 false 则在标题只显示被转推推文）
         showRetweetTextInTitle: fallback(params.showRetweetTextInTitle, queryToBoolean(routeParams.get('showRetweetTextInTitle')), true),
-        addLinkForPics: fallback(params.addLinkForPics, queryToBoolean(routeParams.get('addLinkForPics')), false),
-        showTimestampInDescription: fallback(params.showTimestampInDescription, queryToBoolean(routeParams.get('showTimestampInDescription')), false),
+        // 为图片添加可点击的链接
+        addLinkForPics: fallback(params.addLinkForPics, queryToBoolean(routeParams.get('addLinkForPics')), true),
+        // 在正文处显示推特的时间戳
+        showTimestampInDescription: fallback(params.showTimestampInDescription, queryToBoolean(routeParams.get('showTimestampInDescription')), true),
+        // 在标题处显示被引用的推文
         showQuotedInTitle: fallback(params.showQuotedInTitle, queryToBoolean(routeParams.get('showQuotedInTitle')), false),
-
+        // 推文配图宽（生效取决于阅读器）
         widthOfPics: fallback(params.widthOfPics, queryToInteger(routeParams.get('widthOfPics')), -1),
+        // 推文配图高（生效取决于阅读器）
         heightOfPics: fallback(params.heightOfPics, queryToInteger(routeParams.get('heightOfPics')), -1),
+        // 作者头像大小
         sizeOfAuthorAvatar: fallback(params.sizeOfAuthorAvatar, queryToInteger(routeParams.get('sizeOfAuthorAvatar')), 48),
+        // 被转推推文作者头像大小
         sizeOfQuotedAuthorAvatar: fallback(params.sizeOfQuotedAuthorAvatar, queryToInteger(routeParams.get('sizeOfQuotedAuthorAvatar')), 24),
     };
 
@@ -120,6 +159,7 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
                 let content = '';
                 let style = '';
                 let originalImg;
+                let smallImg;
                 switch (media.type) {
                     case 'animated_gif':
                     case 'video':
@@ -129,11 +169,13 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
                     case 'photo':
                     default:
                         originalImg = getOriginalImg(media.media_url_https);
+                        smallImg = getSmallImg(media.media_url_https);
                         if (!readable) {
                             content += `<br>`;
                         }
                         if (addLinkForPics) {
-                            content += `<a href='${originalImg}' target='_blank' rel='noopener noreferrer'>`;
+                            // content += `<a href='${originalImg}' target='_blank' rel='noopener noreferrer'>`;
+                            content += `<br><a href="${originalImg}" target="_blank" rel="noopener noreferrer">---Download Pic---</a><br>`;
                         }
                         content += `<img `;
                         if (widthOfPics >= 0) {
@@ -147,7 +189,8 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
                         if (widthOfPics <= 0 && heightOfPics <= 0) {
                             content += `width="${media.sizes.large.w}" height="${media.sizes.large.h}" `;
                         }
-                        content += ` style="${style}" ` + `${readable ? 'hspace="4" vspace="8"' : ''} src="${originalImg}">`;
+                        // content += ` style="${style}" ` + `${readable ? 'hspace="4" vspace="8"' : ''} src="${originalImg}">`;
+                        content += ` style="${style}" ` + `${readable ? 'hspace="4" vspace="8"' : ''} src="${smallImg}">`;
                         if (addLinkForPics) {
                             content += `</a>`;
                         }
@@ -172,6 +215,7 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
             for (const media of item.extended_entities.media) {
                 let content;
                 let originalImg;
+                let smallImg;
                 switch (media.type) {
                     case 'video':
                         content = formatVideo(media, `width="0" height="0"`);
@@ -180,7 +224,9 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
                     case 'photo':
                     default:
                         originalImg = getOriginalImg(media.media_url_https);
-                        content = `<img width='0' height='0' hidden='true' src='${originalImg}'>`;
+                        smallImg = getSmallImg(media.media_url_https);
+                        // content = `<img width='0' height='0' hidden='true' src='${originalImg}'>`;
+                        content = `<img width='0' height='0' hidden='true' src='${smallImg}'>`;
                         break;
                 }
 
