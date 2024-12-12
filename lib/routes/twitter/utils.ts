@@ -58,7 +58,7 @@ const formatText = (item) => {
     const urls = item.entities.urls || [];
     for (const url of urls) {
         // trim link pointing to the tweet itself (usually appears when the tweet is truncated)
-        text = text.replaceAll(url.url, url.expanded_url.endsWith(id_str) ? '' : url.expanded_url);
+        text = text.replaceAll(url.url, url.expanded_url?.endsWith(id_str) ? '' : url.expanded_url);
     }
     const media = item.extended_entities?.media || [];
     for (const m of media) {
@@ -78,6 +78,8 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
         authorNameBold: fallback(params.authorNameBold, queryToBoolean(routeParams.get('authorNameBold')), true),
         // 是否在标题处显示作者
         showAuthorInTitle: fallback(params.showAuthorInTitle, queryToBoolean(routeParams.get('showAuthorInTitle')), false),
+        // 
+        showAuthorAsTitleOnly: fallback(params.showAuthorAsTitleOnly, queryToBoolean(routeParams.get('showAuthorAsTitleOnly')), false),
         // 是否在正文处显示作者
         showAuthorInDesc: fallback(params.showAuthorInDesc, queryToBoolean(routeParams.get('showAuthorInDesc')), true),
         // 是否在正文处显示被转推的推文的作者头像（若阅读器会提取正文图片，不建议开启）
@@ -112,6 +114,7 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
         readable,
         authorNameBold,
         showAuthorInTitle,
+        showAuthorAsTitleOnly,
         showAuthorInDesc,
         showQuotedAuthorAvatarInDesc,
         showAuthorAvatarInDesc,
@@ -335,6 +338,10 @@ const ProcessFeed = (ctx, { data = [] }, params = {}) => {
 
         if (showQuotedInTitle) {
             title += quoteInTitle;
+        }
+
+        if (showAuthorAsTitleOnly) {
+            title = originalItem.user.name;
         }
 
         // Make description
