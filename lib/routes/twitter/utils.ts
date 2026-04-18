@@ -24,7 +24,6 @@ const getOriginalImg = (url) => {
         return url;
     }
 };
-const replaceBreak = (text) => text.replaceAll(/<br><br>|<br>/g, ' ');
 // +++
 const getSmallImg = (url) => {
     let m: RegExpMatchArray | null;
